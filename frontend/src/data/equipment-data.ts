@@ -30,13 +30,13 @@ export const SEED_EQUIPMENT: Equipment[] = [
       {
         id: "mh-001",
         date: "2026-02-20",
-        description: "Routine calibration and rotor inspection",
+        notes: "Routine calibration and rotor inspection",
         performedBy: "Dr. Smith",
       },
       {
         id: "mh-002",
         date: "2026-01-15",
-        description: "Replaced bearing assembly",
+        notes: "Replaced bearing assembly",
         performedBy: "Tech. Johnson",
       },
     ],
@@ -51,7 +51,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
       {
         id: "mh-003",
         date: "2026-02-18",
-        description: "Lens realignment and cleaning",
+        notes: "Lens realignment and cleaning",
         performedBy: "Tech. Davis",
       },
     ],
@@ -66,19 +66,19 @@ export const SEED_EQUIPMENT: Equipment[] = [
       {
         id: "mh-004",
         date: "2026-02-10",
-        description: "Pressure valve replacement",
+        notes: "Pressure valve replacement",
         performedBy: "Eng. Williams",
       },
       {
         id: "mh-005",
         date: "2026-01-05",
-        description: "Annual safety inspection",
+        notes: "Annual safety inspection",
         performedBy: "Safety Team",
       },
       {
         id: "mh-006",
         date: "2025-12-01",
-        description: "Gasket replacement and seal test",
+        notes: "Gasket replacement and seal test",
         performedBy: "Tech. Johnson",
       },
     ],
@@ -101,7 +101,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
       {
         id: "mh-007",
         date: "2026-02-15",
-        description: "Temperature sensor recalibration",
+        notes: "Temperature sensor recalibration",
         performedBy: "Tech. Davis",
       },
     ],

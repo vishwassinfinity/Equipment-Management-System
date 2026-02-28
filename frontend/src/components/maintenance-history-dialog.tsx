@@ -1,4 +1,5 @@
 import { format } from "date-fns"
+import { Plus } from "lucide-react"
 
 import type { Equipment } from "@/types/equipment"
 import {
@@ -9,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -22,12 +24,14 @@ interface MaintenanceHistoryDialogProps {
   equipment: Equipment | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onLogMaintenance: (equipment: Equipment) => void
 }
 
 export function MaintenanceHistoryDialog({
   equipment,
   open,
   onOpenChange,
+  onLogMaintenance,
 }: MaintenanceHistoryDialogProps) {
   if (!equipment) return null
 
@@ -35,11 +39,22 @@ export function MaintenanceHistoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Maintenance History</DialogTitle>
-          <DialogDescription>
-            Showing maintenance records for{" "}
-            <span className="font-semibold text-foreground">{equipment.name}</span>
-          </DialogDescription>
+          <div className="flex items-start justify-between pr-8">
+            <div>
+              <DialogTitle>Maintenance History</DialogTitle>
+              <DialogDescription>
+                Showing maintenance records for{" "}
+                <span className="font-semibold text-foreground">{equipment.name}</span>
+              </DialogDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => onLogMaintenance(equipment)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Log Maintenance
+            </Button>
+          </div>
         </DialogHeader>
 
         {equipment.maintenanceHistory.length === 0 ? (
@@ -49,12 +64,12 @@ export function MaintenanceHistoryDialog({
             </p>
           </div>
         ) : (
-          <div className="rounded-lg border">
+          <div className="max-h-[400px] overflow-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead>Performed By</TableHead>
                 </TableRow>
               </TableHeader>
@@ -66,7 +81,7 @@ export function MaintenanceHistoryDialog({
                         {format(new Date(record.date), "MMM dd, yyyy")}
                       </Badge>
                     </TableCell>
-                    <TableCell>{record.description}</TableCell>
+                    <TableCell>{record.notes}</TableCell>
                     <TableCell className="font-medium">
                       {record.performedBy}
                     </TableCell>

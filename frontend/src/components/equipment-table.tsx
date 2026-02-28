@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { MoreHorizontal, Pencil, Trash2, History } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash2, History, Wrench } from "lucide-react"
 
 import type { Equipment } from "@/types/equipment"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +25,7 @@ interface EquipmentTableProps {
   onEdit: (equipment: Equipment) => void
   onDelete: (equipment: Equipment) => void
   onViewHistory: (equipment: Equipment) => void
+  onLogMaintenance: (equipment: Equipment) => void
 }
 
 function getStatusVariant(status: Equipment["status"]) {
@@ -43,6 +44,7 @@ export function EquipmentTable({
   onEdit,
   onDelete,
   onViewHistory,
+  onLogMaintenance,
 }: EquipmentTableProps) {
   if (equipment.length === 0) {
     return (
@@ -98,6 +100,10 @@ export function EquipmentTable({
                     <DropdownMenuItem onClick={() => onViewHistory(item)}>
                       <History className="mr-2 h-4 w-4" />
                       Maintenance History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onLogMaintenance(item)}>
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Log Maintenance
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

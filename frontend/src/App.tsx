@@ -1,12 +1,13 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
-import type { Equipment, EquipmentFormData } from "@/types/equipment"
+import type { Equipment, EquipmentFormData, MaintenanceLogFormData } from "@/types/equipment"
 import { EQUIPMENT_TYPES, SEED_EQUIPMENT } from "@/data/equipment-data"
 import { Button } from "@/components/ui/button"
 import { EquipmentTable } from "@/components/equipment-table"
 import { EquipmentFormDialog } from "@/components/equipment-form-dialog"
 import { MaintenanceHistoryDialog } from "@/components/maintenance-history-dialog"
+import { MaintenanceLogDialog } from "@/components/maintenance-log-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 
 function generateId(): string {
@@ -23,6 +24,10 @@ function App() {
   // Maintenance history dialog state
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyEquipment, setHistoryEquipment] = useState<Equipment | null>(null)
+
+  // Maintenance log dialog state
+  const [logOpen, setLogOpen] = useState(false)
+  const [loggingEquipment, setLoggingEquipment] = useState<Equipment | null>(null)
 
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -42,7 +47,6 @@ function App() {
 
   function handleFormSubmit(data: EquipmentFormData) {
     if (editingEquipment) {
-      // Update existing
       setEquipment((prev) =>
         prev.map((item) =>
           item.id === editingEquipment.id
@@ -51,7 +55,6 @@ function App() {
         )
       )
     } else {
-      // Add new
       const newEquipment: Equipment = {
         id: generateId(),
         ...data,
@@ -78,6 +81,54 @@ function App() {
   function handleViewHistory(item: Equipment) {
     setHistoryEquipment(item)
     setHistoryOpen(true)
+  }
+
+  function handleOpenLogMaintenance(item: Equipment) {
+    setLoggingEquipment(item)
+    setLogOpen(true)
+  }
+
+  /**
+   * Business Rules (will move to backend later):
+   * 1. Add the maintenance record to the equipment's history
+   * 2. Set equipment status to "Active"
+   * 3. Update lastCleanedDate to the maintenance date
+   */
+  function handleLogMaintenanceSubmit(equipmentId: string, data: MaintenanceLogFormData) {
+    const newRecord = {
+      id: `mh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      ...data,
+    }
+
+    setEquipment((prev) =>
+      prev.map((item) =>
+        item.id === equipmentId
+          ? {
+              ...item,
+              status: "Active" as const,
+              lastCleanedDate: data.date,
+              maintenanceHistory: [newRecord, ...item.maintenanceHistory],
+            }
+          : item
+      )
+    )
+
+    // Also refresh the history dialog if it's showing the same equipment
+    if (historyEquipment?.id === equipmentId) {
+      setHistoryEquipment((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "Active" as const,
+              lastCleanedDate: data.date,
+              maintenanceHistory: [newRecord, ...prev.maintenanceHistory],
+            }
+          : null
+      )
+    }
+
+    setLogOpen(false)
+    setLoggingEquipment(null)
   }
 
   // Derive form initial data from editing equipment
@@ -115,6 +166,7 @@ function App() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onViewHistory={handleViewHistory}
+          onLogMaintenance={handleOpenLogMaintenance}
         />
 
         {/* Add/Edit Dialog (reuses the same form component) */}
@@ -137,6 +189,18 @@ function App() {
             setHistoryOpen(open)
             if (!open) setHistoryEquipment(null)
           }}
+          onLogMaintenance={handleOpenLogMaintenance}
+        />
+
+        {/* Maintenance Log Dialog */}
+        <MaintenanceLogDialog
+          equipment={loggingEquipment}
+          open={logOpen}
+          onOpenChange={(open) => {
+            setLogOpen(open)
+            if (!open) setLoggingEquipment(null)
+          }}
+          onSubmit={handleLogMaintenanceSubmit}
         />
 
         {/* Delete Confirmation Dialog */}
