@@ -1,9 +1,11 @@
 import type {
   Equipment,
   EquipmentFormData,
+  EquipmentQuery,
   EquipmentType,
   MaintenanceLogFormData,
   MaintenanceRecord,
+  PageResponse,
 } from "@/types/equipment"
 
 const API_BASE = "http://localhost:8080/api"
@@ -35,9 +37,21 @@ export async function createEquipmentType(name: string): Promise<EquipmentType> 
 
 // ─── Equipment ─────────────────────────────────────────────
 
-export async function fetchAllEquipment(): Promise<Equipment[]> {
-  const res = await fetch(`${API_BASE}/equipment`)
-  return handleResponse<Equipment[]>(res)
+/**
+ * Paginated, filterable, searchable, sortable equipment list.
+ */
+export async function fetchEquipment(query: EquipmentQuery): Promise<PageResponse<Equipment>> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    size: String(query.size),
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+  })
+  if (query.status) params.set("status", query.status)
+  if (query.search) params.set("search", query.search)
+
+  const res = await fetch(`${API_BASE}/equipment?${params}`)
+  return handleResponse<PageResponse<Equipment>>(res)
 }
 
 export async function fetchEquipmentById(id: number): Promise<Equipment> {

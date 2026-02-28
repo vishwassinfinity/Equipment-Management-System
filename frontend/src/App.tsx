@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from "react"
 import { Plus } from "lucide-react"
 
-import type { Equipment, EquipmentFormData, EquipmentType, MaintenanceLogFormData } from "@/types/equipment"
+import type {
+  Equipment,
+  EquipmentFormData,
+  EquipmentQuery,
+  EquipmentType,
+  MaintenanceLogFormData,
+  PageResponse,
+} from "@/types/equipment"
 import * as api from "@/services/api"
 import { Button } from "@/components/ui/button"
 import { EquipmentTable } from "@/components/equipment-table"
@@ -10,10 +17,26 @@ import { MaintenanceHistoryDialog } from "@/components/maintenance-history-dialo
 import { MaintenanceLogDialog } from "@/components/maintenance-log-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 
+const DEFAULT_QUERY: EquipmentQuery = {
+  page: 0,
+  size: 10,
+  sortBy: "name",
+  sortDir: "asc",
+}
+
 function App() {
-  const [equipment, setEquipment] = useState<Equipment[]>([])
+  const [pageData, setPageData] = useState<PageResponse<Equipment>>({
+    content: [],
+    page: 0,
+    size: 10,
+    totalElements: 0,
+    totalPages: 0,
+  })
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Query state (drives server-side filtering, search, sort, pagination)
+  const [query, setQuery] = useState<EquipmentQuery>(DEFAULT_QUERY)
 
   // Form dialog state
   const [formOpen, setFormOpen] = useState(false)
@@ -37,10 +60,10 @@ function App() {
 
   // --- Data Fetching ---
 
-  const loadEquipment = useCallback(async () => {
+  const loadEquipment = useCallback(async (q: EquipmentQuery) => {
     try {
-      const data = await api.fetchAllEquipment()
-      setEquipment(data)
+      const data = await api.fetchEquipment(q)
+      setPageData(data)
     } catch (err) {
       console.error("Failed to load equipment:", err)
     }
@@ -58,11 +81,43 @@ function App() {
   useEffect(() => {
     async function init() {
       setLoading(true)
-      await Promise.all([loadEquipment(), loadEquipmentTypes()])
+      await Promise.all([loadEquipment(query), loadEquipmentTypes()])
       setLoading(false)
     }
     init()
-  }, [loadEquipment, loadEquipmentTypes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Re-fetch whenever query changes (after initial load)
+  useEffect(() => {
+    if (!loading) {
+      loadEquipment(query)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, loadEquipment])
+
+  // Helpers to update query
+  function updateQuery(partial: Partial<EquipmentQuery>) {
+    setQuery((prev) => ({
+      ...prev,
+      ...partial,
+      // Reset to first page when filter/search/sort changes
+      page: "page" in partial ? (partial.page ?? 0) : 0,
+    }))
+  }
+
+  function handleSort(field: string) {
+    setQuery((prev) => ({
+      ...prev,
+      sortBy: field,
+      sortDir: prev.sortBy === field && prev.sortDir === "asc" ? "desc" : "asc",
+      page: 0,
+    }))
+  }
+
+  function handlePageChange(newPage: number) {
+    setQuery((prev) => ({ ...prev, page: newPage }))
+  }
 
   // --- Handlers ---
 
@@ -84,7 +139,7 @@ function App() {
       } else {
         await api.createEquipment(data)
       }
-      await loadEquipment()
+      await loadEquipment(query)
       setFormOpen(false)
       setEditingEquipment(null)
     } catch (err) {
@@ -102,7 +157,7 @@ function App() {
     if (!deletingEquipment) return
     try {
       await api.deleteEquipment(deletingEquipment.id)
-      await loadEquipment()
+      await loadEquipment(query)
       setDeleteOpen(false)
       setDeletingEquipment(null)
     } catch (err) {
@@ -112,7 +167,6 @@ function App() {
 
   async function handleViewHistory(item: Equipment) {
     try {
-      // Fetch fresh data for this equipment to get latest maintenance history
       const fresh = await api.fetchEquipmentById(item.id)
       setHistoryEquipment(fresh)
       setHistoryOpen(true)
@@ -130,10 +184,8 @@ function App() {
     try {
       setLogError(null)
       await api.logMaintenance(equipmentId, data)
-      // Refresh equipment list (status and lastCleanedDate may have changed)
-      await loadEquipment()
+      await loadEquipment(query)
 
-      // Also refresh the history dialog if it's showing the same equipment
       if (historyEquipment?.id === equipmentId) {
         const fresh = await api.fetchEquipmentById(equipmentId)
         setHistoryEquipment(fresh)
@@ -184,9 +236,15 @@ function App() {
           </Button>
         </div>
 
-        {/* Equipment Table */}
+        {/* Equipment Table with server-side controls */}
         <EquipmentTable
-          equipment={equipment}
+          equipment={pageData.content}
+          query={query}
+          totalElements={pageData.totalElements}
+          totalPages={pageData.totalPages}
+          onQueryChange={updateQuery}
+          onSort={handleSort}
+          onPageChange={handlePageChange}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onViewHistory={handleViewHistory}

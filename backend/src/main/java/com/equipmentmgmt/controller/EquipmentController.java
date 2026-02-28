@@ -3,6 +3,7 @@ package com.equipmentmgmt.controller;
 import com.equipmentmgmt.dto.EquipmentRequest;
 import com.equipmentmgmt.dto.EquipmentResponse;
 import com.equipmentmgmt.dto.MaintenanceRecordResponse;
+import com.equipmentmgmt.dto.PageResponse;
 import com.equipmentmgmt.service.EquipmentService;
 import com.equipmentmgmt.service.MaintenanceService;
 import jakarta.validation.Valid;
@@ -23,9 +24,22 @@ public class EquipmentController {
         this.maintenanceService = maintenanceService;
     }
 
+    /**
+     * Paginated, filterable, searchable, sortable list of equipment.
+     * GET /api/equipment?page=0&size=10&status=Active&search=micro&sortBy=name&sortDir=asc
+     */
     @GetMapping
-    public ResponseEntity<List<EquipmentResponse>> getAllEquipment() {
-        return ResponseEntity.ok(equipmentService.getAllEquipment());
+    public ResponseEntity<PageResponse<EquipmentResponse>> getAllEquipment(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        PageResponse<EquipmentResponse> result =
+                equipmentService.getEquipmentPage(status, search, page, size, sortBy, sortDir);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
