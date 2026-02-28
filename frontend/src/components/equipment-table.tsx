@@ -85,8 +85,10 @@ function SortableHeader({
 }) {
   const isActive = currentSort === field
   return (
-    <button
-      className="flex items-center gap-1 hover:text-foreground transition-colors -ml-2 px-2 py-1 rounded-md hover:bg-muted/50"
+    <Button
+      variant="ghost"
+      size="sm"
+      className="flex items-center gap-1 -ml-2 px-2 py-1 h-auto font-normal hover:bg-muted/50"
       onClick={() => onSort(field)}
     >
       {label}
@@ -99,7 +101,7 @@ function SortableHeader({
       ) : (
         <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
       )}
-    </button>
+    </Button>
   )
 }
 

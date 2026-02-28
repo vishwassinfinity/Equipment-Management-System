@@ -1,50 +1,105 @@
 # Compliance Checklist
 
-This document maps each project requirement to its implementation.
+This document confirms compliance with all submission requirements.
 
 ---
 
-## Functional Requirements
+## UI Compliance
+
+- **No inline styles were used** — All styling uses Tailwind CSS utility classes via `className`. Zero `style={{}}` or `style={}` attributes exist in the codebase.
+- **No raw HTML form elements were used** — All form elements (`Input`, `Select`, `Button`, `Label`, `Calendar`, `Popover`, `Dialog`) are shadcn/ui components built on Radix UI primitives. No raw `<input>`, `<select>`, `<button>`, or `<textarea>` elements are used in application components.
+- **Add and Edit reuse the same form component** — A single `EquipmentForm` component (`frontend/src/components/equipment-form.tsx`) handles both add and edit modes. It receives optional `initialData` (null for add, populated for edit) and adapts accordingly.
+
+## Database Compliance
+
+- **Equipment types are not hardcoded in the database schema** — Equipment types are stored in a separate `equipment_types` table with a foreign key from `equipment.type_id`. New types can be added, updated, or deleted at any time via the `/api/equipment-types` API without any code changes.
+
+## Business Rules (Backend-Enforced)
+
+- **30-day Active status rule** — `EquipmentService.validateActiveStatusCleanedDate()` rejects any attempt to set status to "Active" if the last cleaned date is older than 30 days. Returns HTTP 400 with a descriptive error message including the exact day count. Enforced on create, update, and maintenance logging.
+- **Maintenance updates status and date** — `MaintenanceService.logMaintenance()` automatically sets equipment status to "Active" and updates last cleaned date to the maintenance date.
+- **Status validation** — Only "Active", "Inactive", and "Under Maintenance" are accepted. Enforced by both backend validation and a PostgreSQL CHECK constraint.
+
+---
+
+## Requirement-to-Implementation Map
+
+### Core Features
 
 | # | Requirement | Status | Implementation |
 |---|-------------|--------|----------------|
-| 1 | CRUD operations for equipment | Done | `EquipmentController` — POST, GET, PUT, DELETE at `/api/equipment` |
-| 2 | Equipment fields: name, type, status, last cleaned date | Done | `Equipment` entity with all four fields; `EquipmentRequest` DTO with validation |
-| 3 | Status values: Active, Inactive, Under Maintenance | Done | Database CHECK constraint + backend `validateStatus()` |
-| 4 | Maintenance history logging | Done | `MaintenanceController` POST `/api/maintenance`; records stored in `maintenance_records` table |
-| 5 | View maintenance history per equipment | Done | GET `/api/equipment/{id}/maintenance`; dialog in frontend |
-| 6 | 30-day Active rule: cannot set Active if last cleaned > 30 days | Done | `EquipmentService.validateActiveStatusCleanedDate()` enforced on create, update, and maintenance log |
-| 7 | Last cleaned date not editable during edit | Done | Frontend form disables the date picker in edit mode; helper text directs user to log maintenance |
-| 8 | Search (by name and type) | Done | Server-side via JPA Specification `searchByKeyword()` with case-insensitive LIKE |
-| 9 | Filter by status | Done | Server-side via JPA Specification `hasStatus()` |
-| 10 | Pagination | Done | Server-side using Spring Data `Pageable`; frontend pagination controls |
-| 11 | Server-side sorting | Done | `PageRequest.of(page, size, sort)` with column mapping; sort dropdown + clickable column headers |
+| 1 | View equipment in table format | Done | `EquipmentTable` component with sortable columns |
+| 2 | Add new equipment | Done | `EquipmentForm` via `EquipmentFormDialog` (add mode) |
+| 3 | Edit existing equipment | Done | Same `EquipmentForm` via `EquipmentFormDialog` (edit mode) |
+| 4 | Delete equipment | Done | `DeleteConfirmDialog` with confirmation |
+| 5 | Equipment fields: Name, Type, Status, Last Cleaned Date | Done | All four fields in entity, DTO, form, and table |
+| 6 | Type as dynamic dropdown from database | Done | `equipment_types` table; `EquipmentTypeController` CRUD API; frontend fetches types dynamically |
 
-## Technical Requirements
+### Workflow 1 — Maintenance Logging
 
 | # | Requirement | Status | Implementation |
 |---|-------------|--------|----------------|
-| 1 | React frontend | Done | React 19 with TypeScript, Vite 7, Tailwind CSS |
-| 2 | Spring Boot backend | Done | Spring Boot 3.2.3, Java 17, Maven |
-| 3 | PostgreSQL database | Done | PostgreSQL 16; schema in `db/schema.sql` |
-| 4 | No inline CSS | Done | All styling uses Tailwind utility classes via `className`; zero `style=` attributes in codebase |
-| 5 | `/backend`, `/frontend`, `/db` folder structure | Done | Project root contains all three directories |
-| 6 | `README.md` with setup instructions | Done | Comprehensive README with prerequisite, database, backend, and frontend setup steps |
-| 7 | `COMPLIANCE.md` | Done | This document |
+| 1 | Log maintenance with Equipment, Date, Notes, Performed By | Done | `MaintenanceController` POST `/api/maintenance` |
+| 2 | Status auto-changes to Active on maintenance | Done | `MaintenanceService.logMaintenance()` |
+| 3 | Last Cleaned Date updates to Maintenance Date | Done | `MaintenanceService.logMaintenance()` |
+| 4 | Maintenance history viewable per equipment | Done | GET `/api/equipment/{id}/maintenance`; `MaintenanceHistoryDialog` in frontend |
+| 5 | Logic implemented in backend | Done | All in `MaintenanceService` |
 
-## Business Rules
+### Workflow 2 — Status Constraint
 
-| Rule | Enforcement Layer | Details |
-|------|-------------------|---------|
-| Equipment cannot be Active if last cleaned > 30 days | Backend | `EquipmentService.validateActiveStatusCleanedDate()` returns HTTP 400 with day count in message |
-| Maintenance log sets equipment to Active | Backend | `MaintenanceService.logMaintenance()` updates status and last cleaned date |
-| Valid statuses only | Backend + Database | Backend validation + PostgreSQL CHECK constraint |
-| Last cleaned date immutable in edit | Frontend | Date picker disabled in edit mode; only updated via maintenance log |
-| Equipment type is required | Backend + Frontend | `@NotNull` on `typeId` in DTO; frontend form validation |
+| # | Requirement | Status | Implementation |
+|---|-------------|--------|----------------|
+| 1 | Cannot mark Active if Last Cleaned > 30 days | Done | `EquipmentService.validateActiveStatusCleanedDate()` |
+| 2 | Backend rejects the request | Done | Throws `IllegalArgumentException` → HTTP 400 |
+| 3 | Meaningful error shown in UI | Done | Error banner in `EquipmentFormDialog` and `MaintenanceLogDialog` |
 
-## Database Schema
+### Technical — Frontend
 
-- **`equipment_types`** — Lookup table for dynamic equipment types (SERIAL PK)
-- **`equipment`** — Main table with FK to `equipment_types`, CHECK on status, indexes on `type_id` and `status`
-- **`maintenance_records`** — FK to `equipment` with CASCADE delete, indexes on `equipment_id` and `maintenance_date`
-- Schema uses `ddl-auto=validate` — Hibernate verifies entity mappings against the existing schema without modifying it
+| # | Requirement | Status | Implementation |
+|---|-------------|--------|----------------|
+| 1 | React | Done | React 19 with TypeScript |
+| 2 | shadcn/ui + Tailwind only | Done | All components use shadcn/ui (Radix UI) + Tailwind |
+| 3 | No inline styles | Done | Zero `style=` attributes |
+| 4 | No raw HTML form elements | Done | All use shadcn `Button`, `Input`, `Select`, `Label` |
+| 5 | Add/Edit reuse same form | Done | Single `EquipmentForm` component |
+| 6 | Basic validation | Done | Client-side + server-side validation |
+| 7 | Equipment displayed in table | Done | `EquipmentTable` with `Table` component |
+| 8 | Maintenance history display | Done | `MaintenanceHistoryDialog` (modal) |
+
+### Technical — Backend
+
+| # | Requirement | Status | Implementation |
+|---|-------------|--------|----------------|
+| 1 | Spring Boot with Java | Done | Spring Boot 3.2.3, Java 17 |
+| 2 | Layered architecture (Controller/Service/Repository) | Done | Separate packages for each layer |
+| 3 | All required REST endpoints | Done | See API table in README.md |
+| 4 | Parameterized queries | Done | JPA methods + `@Param` JPQL + Criteria API Specifications |
+| 5 | Exception handling | Done | `GlobalExceptionHandler` with structured JSON responses |
+| 6 | Appropriate HTTP status codes | Done | 200, 201, 204, 400, 404, 500 |
+
+### Technical — Database
+
+| # | Requirement | Status | Implementation |
+|---|-------------|--------|----------------|
+| 1 | PostgreSQL | Done | PostgreSQL 16 |
+| 2 | Proper relationships | Done | `equipment_types` ←FK— `equipment` ←FK— `maintenance_records` |
+| 3 | Equipment types modifiable without code changes | Done | Separate `equipment_types` table + full CRUD API |
+
+### Bonus Features
+
+| # | Feature | Status | Implementation |
+|---|---------|--------|----------------|
+| 1 | Filtering by status | Done | Server-side via JPA Specification |
+| 2 | Pagination | Done | Spring Data `Pageable` with frontend controls |
+| 3 | Search | Done | Case-insensitive LIKE on name and type |
+| 4 | Server-side sorting | Done | `PageRequest` with `Sort` + sort dropdown |
+| 5 | Docker setup | Not done | — |
+
+### Submission
+
+| # | Requirement | Status |
+|---|-------------|--------|
+| 1 | Public GitHub repository | Ready to push |
+| 2 | Monorepo with `/backend`, `/frontend`, `/db` | Done |
+| 3 | `README.md` with setup + libraries + assumptions | Done |
+| 4 | `COMPLIANCE.md` | Done (this file) |
