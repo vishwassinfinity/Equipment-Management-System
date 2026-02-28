@@ -8,7 +8,7 @@ import type {
   PageResponse,
 } from "@/types/equipment"
 
-const API_BASE = "http://localhost:8080/api"
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080/api"
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
