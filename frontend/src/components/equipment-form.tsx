@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 
-import type { EquipmentFormData, EquipmentStatus } from "@/types/equipment"
+import type { EquipmentFormData, EquipmentStatus, EquipmentType } from "@/types/equipment"
 import { EQUIPMENT_STATUSES } from "@/types/equipment"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -21,15 +21,15 @@ import { Calendar } from "@/components/ui/calendar"
 interface EquipmentFormProps {
   /** Pre-filled data when editing; null/undefined for add mode */
   initialData?: EquipmentFormData | null
-  /** Dynamic list of equipment types (simulates DB-driven dropdown) */
-  equipmentTypes: string[]
+  /** Dynamic list of equipment types from the database */
+  equipmentTypes: EquipmentType[]
   onSubmit: (data: EquipmentFormData) => void
   onCancel: () => void
 }
 
 interface FormErrors {
   name?: string
-  type?: string
+  typeId?: string
   status?: string
   lastCleanedDate?: string
 }
@@ -43,7 +43,9 @@ export function EquipmentForm({
   const isEditing = !!initialData
 
   const [name, setName] = useState(initialData?.name ?? "")
-  const [type, setType] = useState(initialData?.type ?? "")
+  const [typeId, setTypeId] = useState<string>(
+    initialData?.typeId ? String(initialData.typeId) : ""
+  )
   const [status, setStatus] = useState<EquipmentStatus | "">(initialData?.status ?? "")
   const [lastCleanedDate, setLastCleanedDate] = useState<Date | undefined>(
     initialData?.lastCleanedDate ? new Date(initialData.lastCleanedDate) : undefined
@@ -54,7 +56,7 @@ export function EquipmentForm({
   // Sync form when initialData changes (e.g., switching between edit targets)
   useEffect(() => {
     setName(initialData?.name ?? "")
-    setType(initialData?.type ?? "")
+    setTypeId(initialData?.typeId ? String(initialData.typeId) : "")
     setStatus(initialData?.status ?? "")
     setLastCleanedDate(
       initialData?.lastCleanedDate ? new Date(initialData.lastCleanedDate) : undefined
@@ -71,8 +73,8 @@ export function EquipmentForm({
       newErrors.name = "Name must be at least 2 characters"
     }
 
-    if (!type) {
-      newErrors.type = "Equipment type is required"
+    if (!typeId) {
+      newErrors.typeId = "Equipment type is required"
     }
 
     if (!status) {
@@ -96,7 +98,7 @@ export function EquipmentForm({
 
     onSubmit({
       name: name.trim(),
-      type,
+      typeId: Number(typeId),
       status: status as EquipmentStatus,
       lastCleanedDate: lastCleanedDate ? format(lastCleanedDate, "yyyy-MM-dd") : "",
     })
@@ -121,14 +123,14 @@ export function EquipmentForm({
         )}
       </div>
 
-      {/* Type – dynamic from "database" */}
+      {/* Type – dynamic from database */}
       <div className="space-y-2">
         <Label htmlFor="equipment-type">Type</Label>
         <Select
-          value={type}
+          value={typeId}
           onValueChange={(val) => {
-            setType(val)
-            if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }))
+            setTypeId(val)
+            if (errors.typeId) setErrors((prev) => ({ ...prev, typeId: undefined }))
           }}
         >
           <SelectTrigger id="equipment-type">
@@ -136,14 +138,14 @@ export function EquipmentForm({
           </SelectTrigger>
           <SelectContent>
             {equipmentTypes.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
+              <SelectItem key={t.id} value={String(t.id)}>
+                {t.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {errors.type && (
-          <p className="text-sm text-destructive">{errors.type}</p>
+        {errors.typeId && (
+          <p className="text-sm text-destructive">{errors.typeId}</p>
         )}
       </div>
 

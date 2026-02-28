@@ -1,4 +1,4 @@
-import type { EquipmentFormData } from "@/types/equipment"
+import type { EquipmentFormData, EquipmentType } from "@/types/equipment"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ interface EquipmentFormDialogProps {
   onOpenChange: (open: boolean) => void
   /** null = add mode, object = edit mode */
   initialData: EquipmentFormData | null
-  equipmentTypes: string[]
+  equipmentTypes: EquipmentType[]
   onSubmit: (data: EquipmentFormData) => void
 }
 

@@ -75,7 +75,7 @@ export function EquipmentTable({
           {equipment.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.name}</TableCell>
-              <TableCell>{item.type}</TableCell>
+              <TableCell>{item.typeName}</TableCell>
               <TableCell>
                 <Badge variant={getStatusVariant(item.status)}>
                   {item.status}

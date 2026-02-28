@@ -12,7 +12,7 @@ interface MaintenanceLogDialogProps {
   equipment: Equipment | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (equipmentId: string, data: MaintenanceLogFormData) => void
+  onSubmit: (equipmentId: number, data: MaintenanceLogFormData) => void
 }
 
 export function MaintenanceLogDialog({

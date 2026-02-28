@@ -1,8 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Plus } from "lucide-react"
 
-import type { Equipment, EquipmentFormData, MaintenanceLogFormData } from "@/types/equipment"
-import { EQUIPMENT_TYPES, SEED_EQUIPMENT } from "@/data/equipment-data"
+import type { Equipment, EquipmentFormData, EquipmentType, MaintenanceLogFormData } from "@/types/equipment"
+import * as api from "@/services/api"
 import { Button } from "@/components/ui/button"
 import { EquipmentTable } from "@/components/equipment-table"
 import { EquipmentFormDialog } from "@/components/equipment-form-dialog"
@@ -10,12 +10,10 @@ import { MaintenanceHistoryDialog } from "@/components/maintenance-history-dialo
 import { MaintenanceLogDialog } from "@/components/maintenance-log-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 
-function generateId(): string {
-  return `eq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
-
 function App() {
-  const [equipment, setEquipment] = useState<Equipment[]>(SEED_EQUIPMENT)
+  const [equipment, setEquipment] = useState<Equipment[]>([])
+  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Form dialog state
   const [formOpen, setFormOpen] = useState(false)
@@ -33,6 +31,35 @@ function App() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deletingEquipment, setDeletingEquipment] = useState<Equipment | null>(null)
 
+  // --- Data Fetching ---
+
+  const loadEquipment = useCallback(async () => {
+    try {
+      const data = await api.fetchAllEquipment()
+      setEquipment(data)
+    } catch (err) {
+      console.error("Failed to load equipment:", err)
+    }
+  }, [])
+
+  const loadEquipmentTypes = useCallback(async () => {
+    try {
+      const types = await api.fetchEquipmentTypes()
+      setEquipmentTypes(types)
+    } catch (err) {
+      console.error("Failed to load equipment types:", err)
+    }
+  }, [])
+
+  useEffect(() => {
+    async function init() {
+      setLoading(true)
+      await Promise.all([loadEquipment(), loadEquipmentTypes()])
+      setLoading(false)
+    }
+    init()
+  }, [loadEquipment, loadEquipmentTypes])
+
   // --- Handlers ---
 
   function handleAdd() {
@@ -45,25 +72,19 @@ function App() {
     setFormOpen(true)
   }
 
-  function handleFormSubmit(data: EquipmentFormData) {
-    if (editingEquipment) {
-      setEquipment((prev) =>
-        prev.map((item) =>
-          item.id === editingEquipment.id
-            ? { ...item, ...data }
-            : item
-        )
-      )
-    } else {
-      const newEquipment: Equipment = {
-        id: generateId(),
-        ...data,
-        maintenanceHistory: [],
+  async function handleFormSubmit(data: EquipmentFormData) {
+    try {
+      if (editingEquipment) {
+        await api.updateEquipment(editingEquipment.id, data)
+      } else {
+        await api.createEquipment(data)
       }
-      setEquipment((prev) => [...prev, newEquipment])
+      await loadEquipment()
+      setFormOpen(false)
+      setEditingEquipment(null)
+    } catch (err) {
+      console.error("Failed to save equipment:", err)
     }
-    setFormOpen(false)
-    setEditingEquipment(null)
   }
 
   function handleDelete(item: Equipment) {
@@ -71,16 +92,27 @@ function App() {
     setDeleteOpen(true)
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     if (!deletingEquipment) return
-    setEquipment((prev) => prev.filter((item) => item.id !== deletingEquipment.id))
-    setDeleteOpen(false)
-    setDeletingEquipment(null)
+    try {
+      await api.deleteEquipment(deletingEquipment.id)
+      await loadEquipment()
+      setDeleteOpen(false)
+      setDeletingEquipment(null)
+    } catch (err) {
+      console.error("Failed to delete equipment:", err)
+    }
   }
 
-  function handleViewHistory(item: Equipment) {
-    setHistoryEquipment(item)
-    setHistoryOpen(true)
+  async function handleViewHistory(item: Equipment) {
+    try {
+      // Fetch fresh data for this equipment to get latest maintenance history
+      const fresh = await api.fetchEquipmentById(item.id)
+      setHistoryEquipment(fresh)
+      setHistoryOpen(true)
+    } catch (err) {
+      console.error("Failed to load equipment details:", err)
+    }
   }
 
   function handleOpenLogMaintenance(item: Equipment) {
@@ -88,58 +120,42 @@ function App() {
     setLogOpen(true)
   }
 
-  /**
-   * Business Rules (will move to backend later):
-   * 1. Add the maintenance record to the equipment's history
-   * 2. Set equipment status to "Active"
-   * 3. Update lastCleanedDate to the maintenance date
-   */
-  function handleLogMaintenanceSubmit(equipmentId: string, data: MaintenanceLogFormData) {
-    const newRecord = {
-      id: `mh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      ...data,
+  async function handleLogMaintenanceSubmit(equipmentId: number, data: MaintenanceLogFormData) {
+    try {
+      await api.logMaintenance(equipmentId, data)
+      // Refresh equipment list (status and lastCleanedDate may have changed)
+      await loadEquipment()
+
+      // Also refresh the history dialog if it's showing the same equipment
+      if (historyEquipment?.id === equipmentId) {
+        const fresh = await api.fetchEquipmentById(equipmentId)
+        setHistoryEquipment(fresh)
+      }
+
+      setLogOpen(false)
+      setLoggingEquipment(null)
+    } catch (err) {
+      console.error("Failed to log maintenance:", err)
     }
-
-    setEquipment((prev) =>
-      prev.map((item) =>
-        item.id === equipmentId
-          ? {
-              ...item,
-              status: "Active" as const,
-              lastCleanedDate: data.date,
-              maintenanceHistory: [newRecord, ...item.maintenanceHistory],
-            }
-          : item
-      )
-    )
-
-    // Also refresh the history dialog if it's showing the same equipment
-    if (historyEquipment?.id === equipmentId) {
-      setHistoryEquipment((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "Active" as const,
-              lastCleanedDate: data.date,
-              maintenanceHistory: [newRecord, ...prev.maintenanceHistory],
-            }
-          : null
-      )
-    }
-
-    setLogOpen(false)
-    setLoggingEquipment(null)
   }
 
   // Derive form initial data from editing equipment
   const formInitialData: EquipmentFormData | null = editingEquipment
     ? {
         name: editingEquipment.name,
-        type: editingEquipment.type,
+        typeId: editingEquipment.typeId,
         status: editingEquipment.status,
         lastCleanedDate: editingEquipment.lastCleanedDate,
       }
     : null
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-lg text-muted-foreground">Loading equipment...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,7 +185,7 @@ function App() {
           onLogMaintenance={handleOpenLogMaintenance}
         />
 
-        {/* Add/Edit Dialog (reuses the same form component) */}
+        {/* Add/Edit Dialog */}
         <EquipmentFormDialog
           open={formOpen}
           onOpenChange={(open) => {
@@ -177,7 +193,7 @@ function App() {
             if (!open) setEditingEquipment(null)
           }}
           initialData={formInitialData}
-          equipmentTypes={EQUIPMENT_TYPES}
+          equipmentTypes={equipmentTypes}
           onSubmit={handleFormSubmit}
         />
 

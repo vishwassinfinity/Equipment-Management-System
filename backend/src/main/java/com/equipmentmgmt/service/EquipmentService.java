@@ -4,7 +4,7 @@ import com.equipmentmgmt.dto.EquipmentRequest;
 import com.equipmentmgmt.dto.EquipmentResponse;
 import com.equipmentmgmt.exception.ResourceNotFoundException;
 import com.equipmentmgmt.model.Equipment;
-import com.equipmentmgmt.model.EquipmentStatus;
+import com.equipmentmgmt.model.EquipmentType;
 import com.equipmentmgmt.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +14,11 @@ import java.util.List;
 public class EquipmentService {
 
     private final EquipmentRepository equipmentRepository;
+    private final EquipmentTypeService equipmentTypeService;
 
-    public EquipmentService(EquipmentRepository equipmentRepository) {
+    public EquipmentService(EquipmentRepository equipmentRepository, EquipmentTypeService equipmentTypeService) {
         this.equipmentRepository = equipmentRepository;
+        this.equipmentTypeService = equipmentTypeService;
     }
 
     @Transactional(readOnly = true)
@@ -35,12 +37,13 @@ public class EquipmentService {
 
     @Transactional
     public EquipmentResponse createEquipment(EquipmentRequest request) {
-        EquipmentStatus status = EquipmentStatus.fromDisplayString(request.getStatus());
+        validateStatus(request.getStatus());
+        EquipmentType type = equipmentTypeService.findTypeOrThrow(request.getTypeId());
 
         Equipment equipment = new Equipment(
                 request.getName().trim(),
-                request.getType().trim(),
-                status,
+                type,
+                request.getStatus().trim(),
                 request.getLastCleanedDate()
         );
 
@@ -51,11 +54,12 @@ public class EquipmentService {
     @Transactional
     public EquipmentResponse updateEquipment(Long id, EquipmentRequest request) {
         Equipment equipment = findEquipmentOrThrow(id);
-        EquipmentStatus status = EquipmentStatus.fromDisplayString(request.getStatus());
+        validateStatus(request.getStatus());
+        EquipmentType type = equipmentTypeService.findTypeOrThrow(request.getTypeId());
 
         equipment.setName(request.getName().trim());
-        equipment.setType(request.getType().trim());
-        equipment.setStatus(status);
+        equipment.setEquipmentType(type);
+        equipment.setStatus(request.getStatus().trim());
         equipment.setLastCleanedDate(request.getLastCleanedDate());
 
         Equipment saved = equipmentRepository.save(equipment);
@@ -68,16 +72,26 @@ public class EquipmentService {
         equipmentRepository.delete(equipment);
     }
 
-    @Transactional(readOnly = true)
-    public List<String> getDistinctTypes() {
-        return equipmentRepository.findDistinctTypes();
-    }
-
     /**
      * Package-private helper so MaintenanceService can also look up equipment.
      */
     Equipment findEquipmentOrThrow(Long id) {
         return equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
+    }
+
+    /**
+     * Validates that the status is one of the allowed values.
+     */
+    private void validateStatus(String status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Status cannot be null");
+        }
+        String trimmed = status.trim();
+        if (!trimmed.equals("Active") && !trimmed.equals("Inactive") && !trimmed.equals("Under Maintenance")) {
+            throw new IllegalArgumentException(
+                    "Invalid status: '" + status + "'. Must be one of: Active, Inactive, Under Maintenance"
+            );
+        }
     }
 }

@@ -1,16 +1,22 @@
 export type EquipmentStatus = "Active" | "Inactive" | "Under Maintenance"
 
 export interface MaintenanceRecord {
-  id: string
+  id: number
   date: string
   notes: string
   performedBy: string
 }
 
-export interface Equipment {
-  id: string
+export interface EquipmentType {
+  id: number
   name: string
-  type: string
+}
+
+export interface Equipment {
+  id: number
+  name: string
+  typeId: number
+  typeName: string
   status: EquipmentStatus
   lastCleanedDate: string
   maintenanceHistory: MaintenanceRecord[]
@@ -18,7 +24,7 @@ export interface Equipment {
 
 export interface EquipmentFormData {
   name: string
-  type: string
+  typeId: number
   status: EquipmentStatus
   lastCleanedDate: string
 }

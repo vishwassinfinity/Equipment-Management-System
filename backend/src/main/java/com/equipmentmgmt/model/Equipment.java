@@ -16,12 +16,12 @@ public class Equipment {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_id", nullable = false)
+    private EquipmentType equipmentType;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private EquipmentStatus status;
+    @Column(nullable = false, length = 50)
+    private String status;
 
     @Column(name = "last_cleaned_date", nullable = false)
     private LocalDate lastCleanedDate;
@@ -33,9 +33,9 @@ public class Equipment {
     public Equipment() {
     }
 
-    public Equipment(String name, String type, EquipmentStatus status, LocalDate lastCleanedDate) {
+    public Equipment(String name, EquipmentType equipmentType, String status, LocalDate lastCleanedDate) {
         this.name = name;
-        this.type = type;
+        this.equipmentType = equipmentType;
         this.status = status;
         this.lastCleanedDate = lastCleanedDate;
     }
@@ -58,19 +58,19 @@ public class Equipment {
         this.name = name;
     }
 
-    public String getType() {
-        return type;
+    public EquipmentType getEquipmentType() {
+        return equipmentType;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setEquipmentType(EquipmentType equipmentType) {
+        this.equipmentType = equipmentType;
     }
 
-    public EquipmentStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(EquipmentStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 

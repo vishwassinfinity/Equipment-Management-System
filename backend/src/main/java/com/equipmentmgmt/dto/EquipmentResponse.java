@@ -8,7 +8,8 @@ public class EquipmentResponse {
 
     private Long id;
     private String name;
-    private String type;
+    private Integer typeId;
+    private String typeName;
     private String status;
     private LocalDate lastCleanedDate;
     private List<MaintenanceRecordResponse> maintenanceHistory;
@@ -20,8 +21,9 @@ public class EquipmentResponse {
         EquipmentResponse response = new EquipmentResponse();
         response.setId(equipment.getId());
         response.setName(equipment.getName());
-        response.setType(equipment.getType());
-        response.setStatus(equipment.getStatus().toDisplayString());
+        response.setTypeId(equipment.getEquipmentType().getId());
+        response.setTypeName(equipment.getEquipmentType().getName());
+        response.setStatus(equipment.getStatus());
         response.setLastCleanedDate(equipment.getLastCleanedDate());
         response.setMaintenanceHistory(
                 equipment.getMaintenanceHistory()
@@ -50,12 +52,20 @@ public class EquipmentResponse {
         this.name = name;
     }
 
-    public String getType() {
-        return type;
+    public Integer getTypeId() {
+        return typeId;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setTypeId(Integer typeId) {
+        this.typeId = typeId;
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
     }
 
     public String getStatus() {

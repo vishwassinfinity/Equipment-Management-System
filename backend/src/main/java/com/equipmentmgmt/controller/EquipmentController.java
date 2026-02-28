@@ -53,11 +53,6 @@ public class EquipmentController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/types")
-    public ResponseEntity<List<String>> getEquipmentTypes() {
-        return ResponseEntity.ok(equipmentService.getDistinctTypes());
-    }
-
     @GetMapping("/{id}/maintenance")
     public ResponseEntity<List<MaintenanceRecordResponse>> getMaintenanceHistory(@PathVariable Long id) {
         return ResponseEntity.ok(maintenanceService.getMaintenanceHistory(id));

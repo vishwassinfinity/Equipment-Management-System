@@ -3,7 +3,6 @@ package com.equipmentmgmt.service;
 import com.equipmentmgmt.dto.MaintenanceRecordResponse;
 import com.equipmentmgmt.dto.MaintenanceRequest;
 import com.equipmentmgmt.model.Equipment;
-import com.equipmentmgmt.model.EquipmentStatus;
 import com.equipmentmgmt.model.MaintenanceRecord;
 import com.equipmentmgmt.repository.EquipmentRepository;
 import com.equipmentmgmt.repository.MaintenanceRecordRepository;
@@ -50,7 +49,7 @@ public class MaintenanceService {
         MaintenanceRecord saved = maintenanceRecordRepository.save(record);
 
         // Business rule: set status to Active and update lastCleanedDate
-        equipment.setStatus(EquipmentStatus.Active);
+        equipment.setStatus("Active");
         equipment.setLastCleanedDate(request.getDate());
         equipmentRepository.save(equipment);
 

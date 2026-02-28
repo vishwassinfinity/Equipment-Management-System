@@ -11,8 +11,8 @@ public class EquipmentRequest {
     @Size(min = 2, max = 255, message = "Name must be between 2 and 255 characters")
     private String name;
 
-    @NotBlank(message = "Equipment type is required")
-    private String type;
+    @NotNull(message = "Equipment type ID is required")
+    private Integer typeId;
 
     @NotBlank(message = "Status is required")
     private String status;
@@ -31,12 +31,12 @@ public class EquipmentRequest {
         this.name = name;
     }
 
-    public String getType() {
-        return type;
+    public Integer getTypeId() {
+        return typeId;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setTypeId(Integer typeId) {
+        this.typeId = typeId;
     }
 
     public String getStatus() {
