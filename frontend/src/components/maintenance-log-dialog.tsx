@@ -13,6 +13,8 @@ interface MaintenanceLogDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (equipmentId: number, data: MaintenanceLogFormData) => void
+  /** Error message from API to display */
+  errorMessage?: string | null
 }
 
 export function MaintenanceLogDialog({
@@ -20,6 +22,7 @@ export function MaintenanceLogDialog({
   open,
   onOpenChange,
   onSubmit,
+  errorMessage,
 }: MaintenanceLogDialogProps) {
   if (!equipment) return null
 
@@ -34,6 +37,11 @@ export function MaintenanceLogDialog({
             This will set the equipment status to Active and update the last cleaned date.
           </DialogDescription>
         </DialogHeader>
+        {errorMessage && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+            {errorMessage}
+          </div>
+        )}
         <MaintenanceLogForm
           onSubmit={(data) => onSubmit(equipment.id, data)}
           onCancel={() => onOpenChange(false)}

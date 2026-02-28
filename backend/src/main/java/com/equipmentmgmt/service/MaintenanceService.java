@@ -8,6 +8,7 @@ import com.equipmentmgmt.repository.EquipmentRepository;
 import com.equipmentmgmt.repository.MaintenanceRecordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -49,6 +50,8 @@ public class MaintenanceService {
         MaintenanceRecord saved = maintenanceRecordRepository.save(record);
 
         // Business rule: set status to Active and update lastCleanedDate
+        // Validate the 30-day rule before setting Active
+        equipmentService.validateActiveStatusCleanedDate("Active", request.getDate());
         equipment.setStatus("Active");
         equipment.setLastCleanedDate(request.getDate());
         equipmentRepository.save(equipment);

@@ -31,6 +31,10 @@ function App() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deletingEquipment, setDeletingEquipment] = useState<Equipment | null>(null)
 
+  // Error message state (shown in dialogs)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [logError, setLogError] = useState<string | null>(null)
+
   // --- Data Fetching ---
 
   const loadEquipment = useCallback(async () => {
@@ -74,6 +78,7 @@ function App() {
 
   async function handleFormSubmit(data: EquipmentFormData) {
     try {
+      setFormError(null)
       if (editingEquipment) {
         await api.updateEquipment(editingEquipment.id, data)
       } else {
@@ -83,7 +88,8 @@ function App() {
       setFormOpen(false)
       setEditingEquipment(null)
     } catch (err) {
-      console.error("Failed to save equipment:", err)
+      const message = err instanceof Error ? err.message : "Failed to save equipment"
+      setFormError(message)
     }
   }
 
@@ -122,6 +128,7 @@ function App() {
 
   async function handleLogMaintenanceSubmit(equipmentId: number, data: MaintenanceLogFormData) {
     try {
+      setLogError(null)
       await api.logMaintenance(equipmentId, data)
       // Refresh equipment list (status and lastCleanedDate may have changed)
       await loadEquipment()
@@ -135,7 +142,8 @@ function App() {
       setLogOpen(false)
       setLoggingEquipment(null)
     } catch (err) {
-      console.error("Failed to log maintenance:", err)
+      const message = err instanceof Error ? err.message : "Failed to log maintenance"
+      setLogError(message)
     }
   }
 
@@ -190,11 +198,15 @@ function App() {
           open={formOpen}
           onOpenChange={(open) => {
             setFormOpen(open)
-            if (!open) setEditingEquipment(null)
+            if (!open) {
+              setEditingEquipment(null)
+              setFormError(null)
+            }
           }}
           initialData={formInitialData}
           equipmentTypes={equipmentTypes}
           onSubmit={handleFormSubmit}
+          errorMessage={formError}
         />
 
         {/* Maintenance History Dialog */}
@@ -214,9 +226,13 @@ function App() {
           open={logOpen}
           onOpenChange={(open) => {
             setLogOpen(open)
-            if (!open) setLoggingEquipment(null)
+            if (!open) {
+              setLoggingEquipment(null)
+              setLogError(null)
+            }
           }}
           onSubmit={handleLogMaintenanceSubmit}
+          errorMessage={logError}
         />
 
         {/* Delete Confirmation Dialog */}

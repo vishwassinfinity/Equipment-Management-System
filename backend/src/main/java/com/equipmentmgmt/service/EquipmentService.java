@@ -8,6 +8,8 @@ import com.equipmentmgmt.model.EquipmentType;
 import com.equipmentmgmt.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -38,6 +40,7 @@ public class EquipmentService {
     @Transactional
     public EquipmentResponse createEquipment(EquipmentRequest request) {
         validateStatus(request.getStatus());
+        validateActiveStatusCleanedDate(request.getStatus(), request.getLastCleanedDate());
         EquipmentType type = equipmentTypeService.findTypeOrThrow(request.getTypeId());
 
         Equipment equipment = new Equipment(
@@ -55,6 +58,7 @@ public class EquipmentService {
     public EquipmentResponse updateEquipment(Long id, EquipmentRequest request) {
         Equipment equipment = findEquipmentOrThrow(id);
         validateStatus(request.getStatus());
+        validateActiveStatusCleanedDate(request.getStatus(), request.getLastCleanedDate());
         EquipmentType type = equipmentTypeService.findTypeOrThrow(request.getTypeId());
 
         equipment.setName(request.getName().trim());
@@ -78,6 +82,20 @@ public class EquipmentService {
     Equipment findEquipmentOrThrow(Long id) {
         return equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
+    }
+
+    /**
+     * Equipment cannot be marked as "Active" if the Last Cleaned Date is older than 30 days.
+     */
+    void validateActiveStatusCleanedDate(String status, LocalDate lastCleanedDate) {
+        if (status != null && status.trim().equals("Active") && lastCleanedDate != null) {
+            long daysSinceCleaned = ChronoUnit.DAYS.between(lastCleanedDate, LocalDate.now());
+            if (daysSinceCleaned > 30) {
+                throw new IllegalArgumentException(
+                        "Equipment cannot be marked as Active because the Last Cleaned Date is more than 30 days ago (" + daysSinceCleaned + " days). Please perform maintenance first."
+                );
+            }
+        }
     }
 
     /**

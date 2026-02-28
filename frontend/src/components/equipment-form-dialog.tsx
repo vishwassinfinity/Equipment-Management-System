@@ -15,6 +15,8 @@ interface EquipmentFormDialogProps {
   initialData: EquipmentFormData | null
   equipmentTypes: EquipmentType[]
   onSubmit: (data: EquipmentFormData) => void
+  /** Error message from API to display */
+  errorMessage?: string | null
 }
 
 export function EquipmentFormDialog({
@@ -23,6 +25,7 @@ export function EquipmentFormDialog({
   initialData,
   equipmentTypes,
   onSubmit,
+  errorMessage,
 }: EquipmentFormDialogProps) {
   const isEditing = !!initialData
 
@@ -39,6 +42,11 @@ export function EquipmentFormDialog({
               : "Fill in the details to add new equipment."}
           </DialogDescription>
         </DialogHeader>
+        {errorMessage && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+            {errorMessage}
+          </div>
+        )}
         <EquipmentForm
           initialData={initialData}
           equipmentTypes={equipmentTypes}
