@@ -81,10 +81,12 @@ export function EquipmentForm({
       newErrors.status = "Status is required"
     }
 
-    if (!lastCleanedDate) {
-      newErrors.lastCleanedDate = "Last cleaned date is required"
-    } else if (lastCleanedDate > new Date()) {
-      newErrors.lastCleanedDate = "Date cannot be in the future"
+    if (!isEditing) {
+      if (!lastCleanedDate) {
+        newErrors.lastCleanedDate = "Last cleaned date is required"
+      } else if (lastCleanedDate > new Date()) {
+        newErrors.lastCleanedDate = "Date cannot be in the future"
+      }
     }
 
     setErrors(newErrors)
@@ -178,36 +180,54 @@ export function EquipmentForm({
       {/* Last Cleaned Date */}
       <div className="space-y-2">
         <Label>Last Cleaned Date</Label>
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
+        {isEditing ? (
+          <>
             <Button
               variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !lastCleanedDate && "text-muted-foreground"
-              )}
+              disabled
+              className="w-full justify-start text-left font-normal opacity-60 cursor-not-allowed"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {lastCleanedDate ? format(lastCleanedDate, "PPP") : "Pick a date"}
+              {lastCleanedDate ? format(lastCleanedDate, "PPP") : "—"}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={lastCleanedDate}
-              onSelect={(date) => {
-                setLastCleanedDate(date)
-                setCalendarOpen(false)
-                if (errors.lastCleanedDate)
-                  setErrors((prev) => ({ ...prev, lastCleanedDate: undefined }))
-              }}
-              disabled={(date) => date > new Date()}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        {errors.lastCleanedDate && (
-          <p className="text-sm text-destructive">{errors.lastCleanedDate}</p>
+            <p className="text-xs text-muted-foreground">
+              Last cleaned date can only be updated by logging maintenance.
+            </p>
+          </>
+        ) : (
+          <>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !lastCleanedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {lastCleanedDate ? format(lastCleanedDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={lastCleanedDate}
+                  onSelect={(date) => {
+                    setLastCleanedDate(date)
+                    setCalendarOpen(false)
+                    if (errors.lastCleanedDate)
+                      setErrors((prev) => ({ ...prev, lastCleanedDate: undefined }))
+                  }}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.lastCleanedDate && (
+              <p className="text-sm text-destructive">{errors.lastCleanedDate}</p>
+            )}
+          </>
         )}
       </div>
 
